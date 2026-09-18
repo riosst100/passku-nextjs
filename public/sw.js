@@ -1,5 +1,5 @@
-const CACHE_NAME = "passku-shell-v2";
-const SHELL_URLS = ["/manifest.json", "/icon.svg"];
+const CACHE_NAME = "passku-shell-v4";
+const SHELL_URLS = ["/", "/manifest.json", "/icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_URLS)));
@@ -21,15 +21,20 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(req.url);
 
-  // Never cache the app shell HTML or build assets: each deploy ships new
-  // hashed filenames, and a stale cached index.html referencing old chunk
-  // hashes crashes the page on load. Let the browser HTTP cache (which
-  // respects Next.js's immutable cache headers on hashed assets) handle it.
-  if (req.mode === "navigate" || url.pathname.startsWith("/_next/")) {
-    event.respondWith(fetch(req).catch(() => caches.match(req)));
+  // API responses change on every login/sync — always go to the network so
+  // a stale cached response never masks fresh credentials data. If offline,
+  // the app's own IndexedDB cache (not this service worker) is the fallback.
+  if (url.pathname.startsWith("/api/")) {
+    event.respondWith(fetch(req));
     return;
   }
 
+  // Everything else (the HTML shell, hashed _next/ JS/CSS, icons, manifest)
+  // is safe to cache: stale-while-revalidate serves the last-known-good copy
+  // instantly (works offline) while updating the cache in the background for
+  // next time. Each deploy's hashed filenames mean an old cached chunk simply
+  // stops being requested once the new HTML ships, so nothing goes stale in
+  // a way that breaks the page.
   event.respondWith(
     caches.match(req).then((cached) => {
       const network = fetch(req)
