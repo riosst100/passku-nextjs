@@ -78,6 +78,30 @@ function LockClosedIcon() {
   );
 }
 
+function KeyholeIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M12 12v6M9.5 15.5 12 18l2.5-2.5" />
+    </svg>
+  );
+}
+
+const AVATAR_PALETTE = [
+  "from-indigo-500 to-violet-500",
+  "from-fuchsia-500 to-pink-500",
+  "from-sky-500 to-indigo-500",
+  "from-emerald-500 to-teal-500",
+  "from-amber-500 to-orange-500",
+  "from-rose-500 to-red-500",
+];
+
+function avatarGradient(site: string): string {
+  let hash = 0;
+  for (let i = 0; i < site.length; i++) hash = (hash * 31 + site.charCodeAt(i)) >>> 0;
+  return AVATAR_PALETTE[hash % AVATAR_PALETTE.length];
+}
+
 function formatLastSync(ts: number | null): string {
   if (!ts) return "belum pernah";
   return (
@@ -225,7 +249,7 @@ export function CredentialsView() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Cari site, username/email, atau nomor HP..."
-              className="w-full rounded-xl border border-neutral-200 bg-white py-2.5 pl-9 pr-3 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-neutral-300 dark:focus:ring-neutral-300/10"
+              className="w-full rounded-xl border border-neutral-200 bg-white py-2.5 pl-9 pr-3 text-sm text-neutral-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/15"
             />
           </div>
           <button
@@ -233,7 +257,7 @@ export function CredentialsView() {
               setEditing(null);
               setShowForm(true);
             }}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm shadow-indigo-600/20 transition hover:from-indigo-500 hover:to-violet-500"
           >
             <PlusIcon />
             <span className="hidden sm:inline">Tambah</span>
@@ -242,12 +266,18 @@ export function CredentialsView() {
 
         {/* List */}
         <ul className="space-y-2">
-          {filtered.map((entry) => (
+          {filtered.map((entry, i) => (
             <li
               key={entry.id}
-              className="group rounded-xl border border-neutral-200 bg-white p-4 transition hover:border-neutral-300 hover:shadow-sm dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700"
+              style={{ animationDelay: `${Math.min(i, 8) * 40}ms`, animationFillMode: "backwards" }}
+              className="group animate-[fade-in-up_0.4s_ease-out] rounded-xl border border-neutral-200 bg-white p-4 transition hover:border-indigo-200 hover:shadow-md hover:shadow-indigo-900/5 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-indigo-900/60"
             >
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${avatarGradient(entry.site)} text-sm font-semibold text-white shadow-sm`}
+                >
+                  {entry.site.charAt(0).toUpperCase()}
+                </div>
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-neutral-900 dark:text-neutral-100">
                     <span className="truncate">{entry.site}</span>
@@ -265,7 +295,11 @@ export function CredentialsView() {
                       {entry.payload.phone}
                     </p>
                   )}
-                  <p className="mt-1.5 select-none font-mono text-sm tracking-wide text-neutral-700 dark:text-neutral-300">
+                  <p
+                    className={`mt-1.5 select-none font-mono text-sm tracking-wide text-neutral-700 dark:text-neutral-300 ${
+                      revealed.has(entry.id) ? "animate-[pulse-once_0.3s_ease-out]" : ""
+                    }`}
+                  >
                     {revealed.has(entry.id) ? entry.payload.password : "••••••••"}
                   </p>
                 </div>
@@ -273,7 +307,7 @@ export function CredentialsView() {
                   <button
                     onClick={() => revealTemporarily(entry.id)}
                     title="Lihat password (1 detik)"
-                    className="rounded-lg p-2 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+                    className="rounded-lg p-2 text-neutral-400 transition hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-400"
                   >
                     <EyeIcon open={revealed.has(entry.id)} />
                   </button>
@@ -283,7 +317,7 @@ export function CredentialsView() {
                       setShowForm(true);
                     }}
                     title="Edit"
-                    className="rounded-lg p-2 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+                    className="rounded-lg p-2 text-neutral-400 transition hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-400"
                   >
                     <PencilIcon />
                   </button>
@@ -299,7 +333,10 @@ export function CredentialsView() {
             </li>
           ))}
           {filtered.length === 0 && (
-            <div className="rounded-xl border border-dashed border-neutral-300 py-14 text-center dark:border-neutral-800">
+            <div className="flex animate-[fade-in_0.4s_ease-out] flex-col items-center gap-3 rounded-xl border border-dashed border-neutral-300 py-16 text-center dark:border-neutral-800">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50 text-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-500">
+                <KeyholeIcon />
+              </div>
               <p className="text-sm text-neutral-400">
                 {entries.length === 0
                   ? "Belum ada credentials. Tambahkan yang pertama."
@@ -362,7 +399,7 @@ function CredentialFormModal({
       <form
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
-        className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-neutral-200 bg-white p-6 shadow-xl sm:rounded-2xl dark:border-neutral-800 dark:bg-neutral-900"
+        className="max-h-[90dvh] w-full max-w-md animate-[fade-in-up_0.3s_ease-out] overflow-y-auto rounded-t-2xl border border-neutral-200 bg-white p-6 shadow-xl sm:animate-[scale-in_0.2s_ease-out] sm:rounded-2xl dark:border-neutral-800 dark:bg-neutral-900"
       >
         <h2 className="mb-5 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
           {initial ? "Edit Credential" : "Tambah Credential"}
@@ -378,7 +415,7 @@ function CredentialFormModal({
               onChange={(e) => setSite(e.target.value)}
               placeholder="mis. Gmail"
               autoFocus
-              className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-neutral-300 dark:focus:ring-neutral-300/10"
+              className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/15"
               required
             />
           </div>
@@ -389,7 +426,7 @@ function CredentialFormModal({
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-neutral-300 dark:focus:ring-neutral-300/10"
+              className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/15"
               required
             />
           </div>
@@ -401,7 +438,7 @@ function CredentialFormModal({
               type="text"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm font-mono text-neutral-900 outline-none transition focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-neutral-300 dark:focus:ring-neutral-300/10"
+              className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm font-mono text-neutral-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/15"
               required
             />
           </div>
@@ -412,7 +449,7 @@ function CredentialFormModal({
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-neutral-300 dark:focus:ring-neutral-300/10"
+              className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/15"
             />
           </div>
           <div>
@@ -422,7 +459,7 @@ function CredentialFormModal({
             <input
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-neutral-300 dark:focus:ring-neutral-300/10"
+              className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/15"
             />
           </div>
           <div>
@@ -433,7 +470,7 @@ function CredentialFormModal({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="w-full resize-none rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-neutral-300 dark:focus:ring-neutral-300/10"
+              className="w-full resize-none rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/15"
             />
           </div>
         </div>
@@ -449,7 +486,7 @@ function CredentialFormModal({
           <button
             type="submit"
             disabled={saving}
-            className="flex-1 rounded-xl bg-neutral-900 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+            className="flex-1 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 px-3 py-2.5 text-sm font-medium text-white shadow-sm shadow-indigo-600/20 transition hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50"
           >
             {saving ? "Menyimpan..." : "Simpan"}
           </button>
