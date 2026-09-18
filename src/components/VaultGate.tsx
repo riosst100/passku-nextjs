@@ -73,6 +73,10 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-neutral-50 px-4 dark:from-neutral-950 dark:via-neutral-950 dark:to-indigo-950/20">
       <form
         onSubmit={handleSubmit}
+        autoComplete="off"
+        data-lpignore="true"
+        data-1p-ignore
+        data-bwignore
         className="w-full max-w-sm animate-[fade-in_0.35s_ease-out] rounded-2xl border border-neutral-200/80 bg-white/90 p-7 shadow-xl shadow-indigo-900/5 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-900/90 dark:shadow-black/30"
       >
         <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-600/20">
@@ -96,6 +100,10 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
             <input
               type="password"
               autoFocus
+              autoComplete="new-password"
+              data-lpignore="true"
+              data-1p-ignore
+              data-bwignore
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/15"
@@ -110,6 +118,10 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
               </label>
               <input
                 type="password"
+                autoComplete="new-password"
+                data-lpignore="true"
+                data-1p-ignore
+                data-bwignore
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/15"
