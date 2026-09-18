@@ -196,7 +196,7 @@ export function CredentialsView() {
         return next;
       });
       revealTimers.current.delete(id);
-    }, 1000);
+    }, 500);
     revealTimers.current.set(id, timer);
   };
 
@@ -347,7 +347,7 @@ export function CredentialsView() {
                 <div className="flex shrink-0 gap-1">
                   <button
                     onClick={() => revealTemporarily(entry.id)}
-                    title="Lihat password (1 detik)"
+                    title="Lihat password (0.5 detik)"
                     className="rounded-lg p-2 text-neutral-400 transition hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-400"
                   >
                     <EyeIcon open={revealed.has(entry.id)} />

@@ -57,7 +57,7 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
   ) => {
     setter(true);
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => setter(false), 1000);
+    timerRef.current = setTimeout(() => setter(false), 500);
   };
 
   if (status === "checking") {
@@ -159,7 +159,7 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => revealBriefly(setRevealPassword, revealTimer)}
-                title="Lihat password (1 detik)"
+                title="Lihat password (0.5 detik)"
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 transition hover:text-indigo-600 dark:hover:text-indigo-400"
               >
                 <EyeIcon open={revealPassword} />
@@ -188,7 +188,7 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
                 <button
                   type="button"
                   onClick={() => revealBriefly(setRevealConfirm, confirmRevealTimer)}
-                  title="Lihat password (1 detik)"
+                  title="Lihat password (0.5 detik)"
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 transition hover:text-indigo-600 dark:hover:text-indigo-400"
                 >
                   <EyeIcon open={revealConfirm} />
