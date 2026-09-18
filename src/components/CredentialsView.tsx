@@ -52,6 +52,23 @@ function PencilIcon() {
   );
 }
 
+function CopyIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="9" y="9" width="13" height="13" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
 function SearchIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -120,9 +137,11 @@ export function CredentialsView() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Entry | null>(null);
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [online, setOnline] = useState(true);
   const [lastSyncedAt, setLastSyncedAtState] = useState<number | null>(null);
   const revealTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refresh = async () => {
     if (!key) return;
@@ -152,6 +171,7 @@ export function CredentialsView() {
     const timers = revealTimers.current;
     return () => {
       timers.forEach((t) => clearTimeout(t));
+      if (copyTimer.current) clearTimeout(copyTimer.current);
     };
   }, []);
 
@@ -178,6 +198,27 @@ export function CredentialsView() {
       revealTimers.current.delete(id);
     }, 1000);
     revealTimers.current.set(id, timer);
+  };
+
+  const copyPassword = async (id: string, password: string) => {
+    try {
+      await navigator.clipboard.writeText(password);
+    } catch {
+      return;
+    }
+    setCopiedId(id);
+    if (copyTimer.current) clearTimeout(copyTimer.current);
+    copyTimer.current = setTimeout(() => setCopiedId(null), 1500);
+
+    setTimeout(async () => {
+      try {
+        if ((await navigator.clipboard.readText()) === password) {
+          await navigator.clipboard.writeText("");
+        }
+      } catch {
+        // clipboard read permission denied; nothing we can do
+      }
+    }, 20_000);
   };
 
   const handleDelete = async (id: string) => {
@@ -310,6 +351,17 @@ export function CredentialsView() {
                     className="rounded-lg p-2 text-neutral-400 transition hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-400"
                   >
                     <EyeIcon open={revealed.has(entry.id)} />
+                  </button>
+                  <button
+                    onClick={() => copyPassword(entry.id, entry.payload.password)}
+                    title="Salin password"
+                    className={`rounded-lg p-2 transition ${
+                      copiedId === entry.id
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-neutral-400 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-400"
+                    }`}
+                  >
+                    {copiedId === entry.id ? <CheckIcon /> : <CopyIcon />}
                   </button>
                   <button
                     onClick={() => {
