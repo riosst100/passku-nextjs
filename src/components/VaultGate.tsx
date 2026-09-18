@@ -29,7 +29,7 @@ function EyeIcon({ open }: { open: boolean }) {
 }
 
 export function VaultGate({ children }: { children: React.ReactNode }) {
-  const { status, error, init, setupMasterPassword, unlock } = useVaultStore();
+  const { status, error, syncing, init, setupMasterPassword, unlock } = useVaultStore();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -79,7 +79,7 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-neutral-50 dark:from-neutral-950 dark:via-neutral-950 dark:to-indigo-950/20">
         <div className="flex flex-col items-center gap-3 text-sm text-neutral-500 dark:text-neutral-400">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-200 border-t-indigo-600 dark:border-neutral-800 dark:border-t-indigo-400" />
-          Memuat vault...
+          {syncing ? "Menyinkronkan credentials..." : "Memuat vault..."}
         </div>
       </div>
     );
@@ -229,9 +229,18 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
         <button
           type="submit"
           disabled={submitting}
-          className="mt-5 w-full rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 px-3 py-2.5 text-sm font-medium text-white shadow-md shadow-indigo-600/20 transition hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50"
+          className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 px-3 py-2.5 text-sm font-medium text-white shadow-md shadow-indigo-600/20 transition hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50"
         >
-          {submitting ? "Memproses..." : isSetup ? "Buat Vault" : "Buka Vault"}
+          {submitting && (
+            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+          )}
+          {submitting
+            ? syncing
+              ? "Menyinkronkan..."
+              : "Memproses..."
+            : isSetup
+              ? "Buat Vault"
+              : "Buka Vault"}
         </button>
       </form>
     </div>

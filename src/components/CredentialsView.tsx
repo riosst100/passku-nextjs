@@ -139,6 +139,7 @@ export function CredentialsView() {
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [online, setOnline] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [lastSyncedAt, setLastSyncedAtState] = useState<number | null>(null);
   const revealTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -155,7 +156,10 @@ export function CredentialsView() {
     setOnline(navigator.onLine);
     const onOnline = () => {
       setOnline(true);
-      void syncCredentials().then(refresh);
+      setSyncing(true);
+      void syncCredentials()
+        .then(refresh)
+        .finally(() => setSyncing(false));
     };
     const onOffline = () => setOnline(false);
     window.addEventListener("online", onOnline);
@@ -252,10 +256,14 @@ export function CredentialsView() {
                 Passku
               </h1>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400">
-                <span
-                  className={`h-1.5 w-1.5 rounded-full ${online ? "bg-emerald-500" : "bg-neutral-400"}`}
-                />
-                {online ? "Online" : "Offline"}
+                {syncing ? (
+                  <span className="h-2.5 w-2.5 animate-spin rounded-full border-[1.5px] border-indigo-300 border-t-indigo-600 dark:border-indigo-800 dark:border-t-indigo-400" />
+                ) : (
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${online ? "bg-emerald-500" : "bg-neutral-400"}`}
+                  />
+                )}
+                {syncing ? "Menyinkronkan..." : online ? "Online" : "Offline"}
               </span>
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-neutral-500 dark:text-neutral-400">

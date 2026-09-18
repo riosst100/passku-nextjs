@@ -15,6 +15,7 @@ interface VaultState {
   status: "checking" | "needs-setup" | "locked" | "unlocked";
   key: CryptoKey | null;
   error: string | null;
+  syncing: boolean;
   init: () => Promise<void>;
   setupMasterPassword: (password: string) => Promise<void>;
   unlock: (password: string) => Promise<boolean>;
@@ -48,12 +49,14 @@ export const useVaultStore = create<VaultState>((set) => ({
   status: "checking",
   key: null,
   error: null,
+  syncing: false,
 
   init: async () => {
     const restoredKey = await restoreSessionKey();
     if (restoredKey) {
+      set({ syncing: true });
       await syncCredentials();
-      set({ status: "unlocked", key: restoredKey, error: null });
+      set({ status: "unlocked", key: restoredKey, error: null, syncing: false });
       return;
     }
 
@@ -110,8 +113,9 @@ export const useVaultStore = create<VaultState>((set) => ({
     }
 
     await persistSessionKey(key);
+    set({ syncing: true });
     await syncCredentials();
-    set({ status: "unlocked", key, error: null });
+    set({ status: "unlocked", key, error: null, syncing: false });
   },
 
   unlock: async (password: string) => {
@@ -145,8 +149,9 @@ export const useVaultStore = create<VaultState>((set) => ({
       }
 
       await persistSessionKey(key);
+      set({ syncing: true });
       await syncCredentials();
-      set({ status: "unlocked", key, error: null });
+      set({ status: "unlocked", key, error: null, syncing: false });
       return true;
     } catch {
       set({ error: "Master password salah." });
