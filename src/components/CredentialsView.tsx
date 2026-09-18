@@ -14,7 +14,7 @@ interface Entry {
 }
 
 export function CredentialsView() {
-  const { key, lock } = useVaultStore();
+  const { key, lock, wipeOfflineData } = useVaultStore();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -65,6 +65,15 @@ export function CredentialsView() {
     await refresh();
   };
 
+  const handleWipeOfflineData = async () => {
+    const hasPending = entries.some((e) => e.pending);
+    const warning = hasPending
+      ? "Ada perubahan yang belum sinkron ke server dan akan HILANG. Hapus data offline di device ini? Data di server tidak terpengaruh."
+      : "Hapus semua data offline (cache credentials & sesi) di browser ini? Kamu perlu login lagi dengan master password. Data di server tidak terpengaruh.";
+    if (!window.confirm(warning)) return;
+    await wipeOfflineData();
+  };
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
@@ -76,12 +85,20 @@ export function CredentialsView() {
             {online ? "Online" : "Offline"} · {entries.length} credentials tersimpan
           </p>
         </div>
-        <button
-          onClick={lock}
-          className="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
-        >
-          Lock
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleWipeOfflineData}
+            className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
+          >
+            Hapus data offline
+          </button>
+          <button
+            onClick={lock}
+            className="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+          >
+            Lock
+          </button>
+        </div>
       </div>
 
       <div className="mb-4 flex gap-2">

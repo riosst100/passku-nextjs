@@ -15,3 +15,9 @@ class PasskuDB extends Dexie {
 }
 
 export const db = new PasskuDB();
+
+/** Wipes the local offline cache (vault meta + credential ciphertext). Server data is untouched. */
+export async function clearOfflineData(): Promise<void> {
+  await db.vaultMeta.clear();
+  await db.credentials.clear();
+}

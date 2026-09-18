@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { db } from "@/lib/db";
+import { db, clearOfflineData } from "@/lib/db";
 import {
   deriveKeyFromPassword,
   deriveNewKey,
@@ -19,6 +19,7 @@ interface VaultState {
   setupMasterPassword: (password: string) => Promise<void>;
   unlock: (password: string) => Promise<boolean>;
   lock: () => void;
+  wipeOfflineData: () => Promise<void>;
 }
 
 interface ServerMeta {
@@ -157,5 +158,13 @@ export const useVaultStore = create<VaultState>((set) => ({
     fetch("/api/auth", { method: "DELETE" }).catch(() => {});
     clearSessionKey();
     set({ status: "locked", key: null });
+  },
+
+  wipeOfflineData: async () => {
+    fetch("/api/auth", { method: "DELETE" }).catch(() => {});
+    clearSessionKey();
+    await clearOfflineData();
+    set({ status: "checking", key: null, error: null });
+    await useVaultStore.getState().init();
   },
 }));
