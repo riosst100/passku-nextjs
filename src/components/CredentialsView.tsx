@@ -247,17 +247,18 @@ export function CredentialsView() {
         {/* Header */}
         <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
-              Passku
-            </h1>
-            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-neutral-500 dark:text-neutral-400">
-              <span className="inline-flex items-center gap-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+                Passku
+              </h1>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400">
                 <span
                   className={`h-1.5 w-1.5 rounded-full ${online ? "bg-emerald-500" : "bg-neutral-400"}`}
                 />
                 {online ? "Online" : "Offline"}
               </span>
-              <span className="text-neutral-300 dark:text-neutral-700">·</span>
+            </div>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-neutral-500 dark:text-neutral-400">
               <span>{entries.length} credentials</span>
               <span className="text-neutral-300 dark:text-neutral-700">·</span>
               <span>sync terakhir {formatLastSync(lastSyncedAt)}</span>

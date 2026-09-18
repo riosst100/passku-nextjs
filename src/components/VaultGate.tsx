@@ -35,12 +35,26 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
   const [submitting, setSubmitting] = useState(false);
   const [revealPassword, setRevealPassword] = useState(false);
   const [revealConfirm, setRevealConfirm] = useState(false);
+  const [online, setOnline] = useState(true);
   const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const confirmRevealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     init();
   }, [init]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reading current online status on mount
+    setOnline(navigator.onLine);
+    const onOnline = () => setOnline(true);
+    const onOffline = () => setOnline(false);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
 
   useEffect(() => {
     const timers = [revealTimer, confirmRevealTimer];
@@ -124,8 +138,14 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
           <input type="password" name="password" tabIndex={-1} autoComplete="current-password" />
         </div>
 
-        <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-600/20">
-          <LockIcon />
+        <div className="mb-5 flex items-center justify-between">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-600/20">
+            <LockIcon />
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white/60 px-2.5 py-1 text-xs font-medium text-neutral-500 dark:border-neutral-800 dark:bg-neutral-800/60 dark:text-neutral-400">
+            <span className={`h-1.5 w-1.5 rounded-full ${online ? "bg-emerald-500" : "bg-neutral-400"}`} />
+            {online ? "Online" : "Offline"}
+          </span>
         </div>
 
         <h1 className="mb-1 text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
@@ -134,7 +154,9 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
         <p className="mb-6 text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
           {isSetup
             ? "Buat master password untuk mengenkripsi vault kamu. Password ini tidak disimpan di mana pun — kalau lupa, data tidak bisa dipulihkan."
-            : "Masukkan master password untuk membuka vault."}
+            : online
+              ? "Masukkan master password untuk membuka vault."
+              : "Tidak ada koneksi internet. Kamu tetap bisa membuka vault dari data yang sudah tersimpan di device ini."}
         </p>
 
         <div className="space-y-3">
