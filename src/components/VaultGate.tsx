@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useVaultStore } from "@/store/useVaultStore";
 import { IdleLockWatcher } from "@/components/IdleLockWatcher";
 
@@ -13,15 +13,52 @@ function LockIcon() {
   );
 }
 
+function EyeIcon({ open }: { open: boolean }) {
+  return open ? (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  ) : (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a20.3 20.3 0 0 1 5.06-6.06M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a20.4 20.4 0 0 1-3.22 4.44" />
+      <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+      <path d="M1 1l22 22" />
+    </svg>
+  );
+}
+
 export function VaultGate({ children }: { children: React.ReactNode }) {
   const { status, error, init, setupMasterPassword, unlock } = useVaultStore();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [revealPassword, setRevealPassword] = useState(false);
+  const [revealConfirm, setRevealConfirm] = useState(false);
+  const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const confirmRevealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     init();
   }, [init]);
+
+  useEffect(() => {
+    const timers = [revealTimer, confirmRevealTimer];
+    return () => {
+      timers.forEach((ref) => {
+        if (ref.current) clearTimeout(ref.current);
+      });
+    };
+  }, []);
+
+  const revealBriefly = (
+    setter: (v: boolean) => void,
+    timerRef: React.RefObject<ReturnType<typeof setTimeout> | null>
+  ) => {
+    setter(true);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setter(false), 1000);
+  };
 
   if (status === "checking") {
     return (
@@ -97,18 +134,28 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
             <label className="mb-1.5 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
               Master Password
             </label>
-            <input
-              type="password"
-              autoFocus
-              autoComplete="new-password"
-              data-lpignore="true"
-              data-1p-ignore
-              data-bwignore
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/15"
-              required
-            />
+            <div className="relative">
+              <input
+                type={revealPassword ? "text" : "password"}
+                autoFocus
+                autoComplete="new-password"
+                data-lpignore="true"
+                data-1p-ignore
+                data-bwignore
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 pr-10 text-sm text-neutral-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/15"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => revealBriefly(setRevealPassword, revealTimer)}
+                title="Lihat password (1 detik)"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 transition hover:text-indigo-600 dark:hover:text-indigo-400"
+              >
+                <EyeIcon open={revealPassword} />
+              </button>
+            </div>
           </div>
 
           {isSetup && (
@@ -116,17 +163,27 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
               <label className="mb-1.5 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
                 Konfirmasi Password
               </label>
-              <input
-                type="password"
-                autoComplete="new-password"
-                data-lpignore="true"
-                data-1p-ignore
-                data-bwignore
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/15"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={revealConfirm ? "text" : "password"}
+                  autoComplete="new-password"
+                  data-lpignore="true"
+                  data-1p-ignore
+                  data-bwignore
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 pr-10 text-sm text-neutral-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/15"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => revealBriefly(setRevealConfirm, confirmRevealTimer)}
+                  title="Lihat password (1 detik)"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 transition hover:text-indigo-600 dark:hover:text-indigo-400"
+                >
+                  <EyeIcon open={revealConfirm} />
+                </button>
+              </div>
             </div>
           )}
         </div>
