@@ -9,6 +9,7 @@ import {
   VERIFIER_PLAINTEXT,
 } from "@/lib/crypto";
 import { persistSessionKey, restoreSessionKey, clearSessionKey } from "@/lib/sessionKey";
+import { syncCredentials } from "@/lib/credentials";
 
 interface VaultState {
   status: "checking" | "needs-setup" | "locked" | "unlocked";
@@ -51,6 +52,7 @@ export const useVaultStore = create<VaultState>((set) => ({
     const restoredKey = await restoreSessionKey();
     if (restoredKey) {
       set({ status: "unlocked", key: restoredKey, error: null });
+      void syncCredentials();
       return;
     }
 
@@ -108,6 +110,7 @@ export const useVaultStore = create<VaultState>((set) => ({
 
     await persistSessionKey(key);
     set({ status: "unlocked", key, error: null });
+    void syncCredentials();
   },
 
   unlock: async (password: string) => {
@@ -142,6 +145,7 @@ export const useVaultStore = create<VaultState>((set) => ({
 
       await persistSessionKey(key);
       set({ status: "unlocked", key, error: null });
+      void syncCredentials();
       return true;
     } catch {
       set({ error: "Master password salah." });

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useVaultStore } from "@/store/useVaultStore";
-import { listCredentials, saveCredential, deleteCredential } from "@/lib/credentials";
+import { listCredentials, saveCredential, deleteCredential, syncCredentials } from "@/lib/credentials";
 import type { CredentialPayload } from "@/types";
 
 interface Entry {
@@ -10,6 +10,7 @@ interface Entry {
   site: string;
   payload: CredentialPayload;
   updatedAt: number;
+  pending: boolean;
 }
 
 export function CredentialsView() {
@@ -31,7 +32,7 @@ export function CredentialsView() {
     setOnline(navigator.onLine);
     const onOnline = () => {
       setOnline(true);
-      void refresh();
+      void syncCredentials().then(refresh);
     };
     const onOffline = () => setOnline(false);
     window.addEventListener("online", onOnline);
@@ -117,6 +118,11 @@ export function CredentialsView() {
               <div>
                 <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                   {entry.site}
+                  {entry.pending && (
+                    <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-normal text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                      belum sinkron
+                    </span>
+                  )}
                 </p>
                 <p className="text-xs text-neutral-500">{entry.payload.username}</p>
                 <p className="mt-1 font-mono text-xs text-neutral-700 dark:text-neutral-300">

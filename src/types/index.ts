@@ -11,6 +11,8 @@ export interface Credential {
   data: string;
   createdAt: number;
   updatedAt: number;
+  /** set when a local change hasn't been pushed to the server yet */
+  pendingOp?: "upsert" | "delete";
 }
 
 export interface CredentialPayload {
