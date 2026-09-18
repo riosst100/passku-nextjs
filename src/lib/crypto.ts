@@ -26,9 +26,17 @@ async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey>
     },
     keyMaterial,
     { name: "AES-GCM", length: 256 },
-    false,
+    true,
     ["encrypt", "decrypt"]
   );
+}
+
+export async function exportKeyToJwk(key: CryptoKey): Promise<JsonWebKey> {
+  return crypto.subtle.exportKey("jwk", key);
+}
+
+export async function importKeyFromJwk(jwk: JsonWebKey): Promise<CryptoKey> {
+  return crypto.subtle.importKey("jwk", jwk, { name: "AES-GCM" }, true, ["encrypt", "decrypt"]);
 }
 
 export function generateSalt(): Uint8Array {

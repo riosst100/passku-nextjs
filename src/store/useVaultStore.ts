@@ -8,6 +8,7 @@ import {
   encryptString,
   VERIFIER_PLAINTEXT,
 } from "@/lib/crypto";
+import { persistSessionKey, restoreSessionKey, clearSessionKey } from "@/lib/sessionKey";
 
 interface VaultState {
   status: "checking" | "needs-setup" | "locked" | "unlocked";
@@ -47,6 +48,12 @@ export const useVaultStore = create<VaultState>((set) => ({
   error: null,
 
   init: async () => {
+    const restoredKey = await restoreSessionKey();
+    if (restoredKey) {
+      set({ status: "unlocked", key: restoredKey, error: null });
+      return;
+    }
+
     try {
       const serverMeta = await fetchServerMeta();
       if (serverMeta) {
@@ -99,6 +106,7 @@ export const useVaultStore = create<VaultState>((set) => ({
       return;
     }
 
+    await persistSessionKey(key);
     set({ status: "unlocked", key, error: null });
   },
 
@@ -132,6 +140,7 @@ export const useVaultStore = create<VaultState>((set) => ({
         }
       }
 
+      await persistSessionKey(key);
       set({ status: "unlocked", key, error: null });
       return true;
     } catch {
@@ -142,6 +151,7 @@ export const useVaultStore = create<VaultState>((set) => ({
 
   lock: () => {
     fetch("/api/auth", { method: "DELETE" }).catch(() => {});
+    clearSessionKey();
     set({ status: "locked", key: null });
   },
 }));

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useVaultStore } from "@/store/useVaultStore";
+import { IdleLockWatcher } from "@/components/IdleLockWatcher";
 
 export function VaultGate({ children }: { children: React.ReactNode }) {
   const { status, error, init, setupMasterPassword, unlock } = useVaultStore();
@@ -22,7 +23,12 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
   }
 
   if (status === "unlocked") {
-    return <>{children}</>;
+    return (
+      <>
+        <IdleLockWatcher />
+        {children}
+      </>
+    );
   }
 
   const isSetup = status === "needs-setup";
