@@ -26,9 +26,13 @@ export function CredentialsView() {
   };
 
   useEffect(() => {
-    refresh();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data load from IndexedDB/server
+    void refresh();
     setOnline(navigator.onLine);
-    const onOnline = () => setOnline(true);
+    const onOnline = () => {
+      setOnline(true);
+      void refresh();
+    };
     const onOffline = () => setOnline(false);
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
@@ -46,7 +50,11 @@ export function CredentialsView() {
   const toggleReveal = (id: string) => {
     setRevealed((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
