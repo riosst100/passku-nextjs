@@ -343,6 +343,21 @@ export function CredentialsView() {
                   >
                     {revealed.has(entry.id) ? entry.payload.password : "••••••••"}
                   </p>
+                  {entry.payload.url && (
+                    <a
+                      href={
+                        /^https?:\/\//i.test(entry.payload.url)
+                          ? entry.payload.url
+                          : `https://${entry.payload.url}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-1 block truncate text-xs text-indigo-600 hover:underline dark:text-indigo-400"
+                    >
+                      {entry.payload.url}
+                    </a>
+                  )}
                 </div>
                 <div className="flex shrink-0 gap-1">
                   <button
