@@ -430,6 +430,7 @@ function CredentialFormModal({
   const [url, setUrl] = useState(initial?.payload.url ?? "");
   const [notes, setNotes] = useState(initial?.payload.notes ?? "");
   const [saving, setSaving] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -486,13 +487,27 @@ function CredentialFormModal({
             <label className="mb-1.5 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
               Password
             </label>
-            <input
-              type="text"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm font-mono text-neutral-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/15"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                data-lpignore="true"
+                data-1p-ignore
+                data-bwignore
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 pr-10 text-sm font-mono text-neutral-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/15"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                title={showPassword ? "Sembunyikan" : "Lihat password"}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 transition hover:text-indigo-600 dark:hover:text-indigo-400"
+              >
+                <EyeIcon open={showPassword} />
+              </button>
+            </div>
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
