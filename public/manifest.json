@@ -1,0 +1,16 @@
+{
+  "name": "Passku",
+  "short_name": "Passku",
+  "description": "Simpan dan lihat credentials login secara aman, bisa offline.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
