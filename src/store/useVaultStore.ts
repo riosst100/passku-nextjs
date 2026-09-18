@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import {
   deriveKeyFromPassword,
   deriveNewKey,
+  deriveAuthSecret,
   decryptString,
   encryptString,
   VERIFIER_PLAINTEXT,
@@ -18,15 +19,26 @@ interface VaultState {
   lock: () => void;
 }
 
-async function fetchServerMeta(): Promise<{ saltB64: string; verifier: string } | null> {
-  try {
-    const res = await fetch("/api/vault-meta");
-    if (!res.ok) return null;
-    const body = await res.json();
-    return body.exists ? { saltB64: body.saltB64, verifier: body.verifier } : null;
-  } catch {
-    return null;
-  }
+interface ServerMeta {
+  saltB64: string;
+  verifier: string;
+}
+
+async function fetchServerMeta(): Promise<ServerMeta | null> {
+  const res = await fetch("/api/vault-meta");
+  if (!res.ok) throw new Error("server unreachable");
+  const body = await res.json();
+  return body.exists ? { saltB64: body.saltB64, verifier: body.verifier } : null;
+}
+
+async function authenticate(password: string, saltB64: string): Promise<boolean> {
+  const authSecret = await deriveAuthSecret(password, saltB64);
+  const res = await fetch("/api/auth", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ authSecret }),
+  });
+  return res.ok;
 }
 
 export const useVaultStore = create<VaultState>((set) => ({
@@ -35,36 +47,44 @@ export const useVaultStore = create<VaultState>((set) => ({
   error: null,
 
   init: async () => {
-    const serverMeta = await fetchServerMeta();
-    if (serverMeta) {
-      await db.vaultMeta.put({ id: "vault-meta", ...serverMeta });
-      set({ status: "locked" });
+    try {
+      const serverMeta = await fetchServerMeta();
+      if (serverMeta) {
+        await db.vaultMeta.put({ id: "vault-meta", ...serverMeta });
+        set({ status: "locked", error: null });
+        return;
+      }
+      set({ status: "needs-setup", error: null });
       return;
+    } catch {
+      // Server unreachable: fall back to the local cache so the vault can
+      // still be unlocked offline (view-only until back online).
     }
 
-    // Offline fallback: no network, but a vault was set up on this device before.
     const localMeta = await db.vaultMeta.get("vault-meta");
     if (localMeta) {
-      set({ status: "locked" });
+      set({
+        status: "locked",
+        error: "Offline: menampilkan data dari cache lokal. Sinkronisasi akan lanjut saat online.",
+      });
       return;
     }
 
-    if (!navigator.onLine) {
-      set({ status: "locked", error: "Tidak ada koneksi. Sambungkan ke internet untuk setup pertama kali." });
-      return;
-    }
-
-    set({ status: "needs-setup" });
+    set({
+      status: "locked",
+      error: "Tidak bisa terhubung ke server dan belum ada data lokal. Sambungkan ke internet.",
+    });
   },
 
   setupMasterPassword: async (password: string) => {
     const { key, saltB64 } = await deriveNewKey(password);
     const verifier = await encryptString(key, VERIFIER_PLAINTEXT);
+    const authSecret = await deriveAuthSecret(password, saltB64);
 
     const res = await fetch("/api/vault-meta", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ saltB64, verifier }),
+      body: JSON.stringify({ saltB64, verifier, authSecret }),
     });
     if (!res.ok) {
       set({ error: "Gagal setup vault di server. Coba lagi." });
@@ -73,14 +93,9 @@ export const useVaultStore = create<VaultState>((set) => ({
 
     await db.vaultMeta.put({ id: "vault-meta", saltB64, verifier });
 
-    const authRes = await fetch("/api/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ proof: VERIFIER_PLAINTEXT }),
-    });
-    if (!authRes.ok) {
-      set({ error: "Setup berhasil tapi login otomatis gagal. Coba unlock manual." });
-      set({ status: "locked" });
+    const authed = await authenticate(password, saltB64);
+    if (!authed) {
+      set({ status: "locked", error: "Setup berhasil tapi login otomatis gagal. Coba unlock manual." });
       return;
     }
 
@@ -88,7 +103,15 @@ export const useVaultStore = create<VaultState>((set) => ({
   },
 
   unlock: async (password: string) => {
-    const meta = (await fetchServerMeta()) ?? (await db.vaultMeta.get("vault-meta"));
+    let meta: ServerMeta | null = null;
+    let online = true;
+    try {
+      meta = await fetchServerMeta();
+    } catch {
+      online = false;
+      meta = (await db.vaultMeta.get("vault-meta")) ?? null;
+    }
+
     if (!meta) {
       set({ error: "Vault belum di-setup." });
       return false;
@@ -101,14 +124,10 @@ export const useVaultStore = create<VaultState>((set) => ({
 
       await db.vaultMeta.put({ id: "vault-meta", saltB64: meta.saltB64, verifier: meta.verifier });
 
-      if (navigator.onLine) {
-        const authRes = await fetch("/api/auth", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ proof: VERIFIER_PLAINTEXT }),
-        });
-        if (!authRes.ok) {
-          set({ error: "Gagal terhubung ke server." });
+      if (online) {
+        const authed = await authenticate(password, meta.saltB64);
+        if (!authed) {
+          set({ error: "Password cocok secara lokal tapi ditolak server. Coba lagi." });
           return false;
         }
       }

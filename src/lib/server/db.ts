@@ -14,7 +14,8 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS vault_meta (
     id TEXT PRIMARY KEY,
     salt_b64 TEXT NOT NULL,
-    verifier TEXT NOT NULL
+    verifier TEXT NOT NULL,
+    auth_secret_hash TEXT NOT NULL
   );
 
   CREATE TABLE IF NOT EXISTS credentials (

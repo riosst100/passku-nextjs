@@ -1,35 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/server/db";
 import { createSessionToken, SESSION_COOKIE } from "@/lib/server/session";
+import { sha256Hex, safeEqual } from "@/lib/server/hash";
 
 interface VaultMetaRow {
   id: string;
-  salt_b64: string;
-  verifier: string;
+  auth_secret_hash: string;
 }
 
 /**
- * Client already derived the key locally and decrypted the verifier to confirm
- * the master password is correct. It proves that here by re-submitting the
- * verifier ciphertext re-encrypted with a fresh IV — since only a holder of the
- * correct key can produce a value that decrypts back to VERIFIER_PLAINTEXT.
+ * The client derives authSecret from the master password via PBKDF2 (separate
+ * from the encryption key, so this value can't be used to decrypt the vault).
+ * The server only ever stores/compares its SHA-256 hash.
  */
 export async function POST(req: NextRequest) {
-  const row = db.prepare("SELECT * FROM vault_meta WHERE id = 'vault-meta'").get() as
-    | VaultMetaRow
-    | undefined;
+  const row = db
+    .prepare("SELECT id, auth_secret_hash FROM vault_meta WHERE id = 'vault-meta'")
+    .get() as VaultMetaRow | undefined;
 
   if (!row) {
     return NextResponse.json({ error: "Vault not set up" }, { status: 404 });
   }
 
-  const { proof } = (await req.json()) as { proof?: string };
-  if (!proof) {
-    return NextResponse.json({ error: "Missing proof" }, { status: 400 });
+  const { authSecret } = (await req.json()) as { authSecret?: string };
+  if (!authSecret) {
+    return NextResponse.json({ error: "Missing authSecret" }, { status: 400 });
   }
 
-  // The proof is the client's decrypted verifier plaintext, sent over HTTPS.
-  if (proof !== "passku-verifier") {
+  const candidateHash = sha256Hex(authSecret);
+  if (!safeEqual(candidateHash, row.auth_secret_hash)) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
