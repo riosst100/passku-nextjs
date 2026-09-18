@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useVaultStore } from "@/store/useVaultStore";
-import { touchSessionKey, getLastActive, IDLE_TIMEOUT_MS } from "@/lib/sessionKey";
-
-const ACTIVITY_EVENTS = ["mousedown", "keydown", "touchstart", "scroll"] as const;
+import { getLoadedAt, IDLE_TIMEOUT_MS } from "@/lib/sessionKey";
 
 export function IdleLockWatcher() {
   const status = useVaultStore((s) => s.status);
@@ -14,28 +12,21 @@ export function IdleLockWatcher() {
   useEffect(() => {
     if (status !== "unlocked") return;
 
-    touchSessionKey();
-    let timer = setTimeout(lock, IDLE_TIMEOUT_MS);
+    const loadedAt = getLoadedAt() ?? Date.now();
+    const deadline = loadedAt + IDLE_TIMEOUT_MS;
 
-    const onActivity = () => {
-      touchSessionKey();
-      clearTimeout(timer);
-      timer = setTimeout(lock, IDLE_TIMEOUT_MS);
+    const tick = () => {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) {
+        lock();
+        return;
+      }
+      setRemainingMs(remaining);
     };
 
-    ACTIVITY_EVENTS.forEach((event) => window.addEventListener(event, onActivity));
-
-    const tick = setInterval(() => {
-      const lastActive = getLastActive();
-      if (lastActive === null) return;
-      setRemainingMs(Math.max(0, IDLE_TIMEOUT_MS - (Date.now() - lastActive)));
-    }, 1000);
-
-    return () => {
-      clearTimeout(timer);
-      clearInterval(tick);
-      ACTIVITY_EVENTS.forEach((event) => window.removeEventListener(event, onActivity));
-    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
   }, [status, lock]);
 
   if (status !== "unlocked") return null;
