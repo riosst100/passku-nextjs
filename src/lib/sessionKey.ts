@@ -46,3 +46,13 @@ export async function restoreSessionKey(): Promise<CryptoKey | null> {
 export function clearSessionKey(): void {
   sessionStorage.removeItem(STORAGE_KEY);
 }
+
+export function getLastActive(): number | null {
+  const raw = sessionStorage.getItem(STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    return (JSON.parse(raw) as StoredSession).lastActive;
+  } catch {
+    return null;
+  }
+}
