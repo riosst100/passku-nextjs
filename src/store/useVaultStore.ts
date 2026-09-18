@@ -51,8 +51,8 @@ export const useVaultStore = create<VaultState>((set) => ({
   init: async () => {
     const restoredKey = await restoreSessionKey();
     if (restoredKey) {
+      await syncCredentials();
       set({ status: "unlocked", key: restoredKey, error: null });
-      void syncCredentials();
       return;
     }
 
@@ -109,8 +109,8 @@ export const useVaultStore = create<VaultState>((set) => ({
     }
 
     await persistSessionKey(key);
+    await syncCredentials();
     set({ status: "unlocked", key, error: null });
-    void syncCredentials();
   },
 
   unlock: async (password: string) => {
@@ -144,8 +144,8 @@ export const useVaultStore = create<VaultState>((set) => ({
       }
 
       await persistSessionKey(key);
+      await syncCredentials();
       set({ status: "unlocked", key, error: null });
-      void syncCredentials();
       return true;
     } catch {
       set({ error: "Master password salah." });
