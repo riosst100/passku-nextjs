@@ -458,6 +458,17 @@ function CredentialFormModal({
           {initial ? "Edit Credential" : "Tambah Credential"}
         </h2>
 
+        {/* Decoy fields: absorb Chrome's autofill/save-password heuristics
+            before they reach the real fields below. Hidden off-screen, not
+            display:none, so the browser still considers them real inputs. */}
+        <div
+          aria-hidden="true"
+          style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)" }}
+        >
+          <input type="text" name="username" tabIndex={-1} autoComplete="username" />
+          <input type="password" name="password" tabIndex={-1} autoComplete="current-password" />
+        </div>
+
         <div className="space-y-3">
           <div>
             <label className="mb-1.5 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
@@ -468,6 +479,8 @@ function CredentialFormModal({
               onChange={(e) => setSite(e.target.value)}
               placeholder="mis. Gmail"
               autoFocus
+              autoComplete="off"
+              name="passku-site"
               className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/15"
               required
             />
@@ -479,6 +492,8 @@ function CredentialFormModal({
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              autoComplete="off"
+              name="passku-account-username"
               className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/15"
               required
             />
@@ -490,7 +505,8 @@ function CredentialFormModal({
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
-                autoComplete="new-password"
+                autoComplete="off"
+                name="passku-account-secret"
                 data-lpignore="true"
                 data-1p-ignore
                 data-bwignore

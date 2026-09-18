@@ -116,6 +116,14 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
         data-bwignore
         className="w-full max-w-sm animate-[fade-in_0.35s_ease-out] rounded-2xl border border-neutral-200/80 bg-white/90 p-7 shadow-xl shadow-indigo-900/5 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-900/90 dark:shadow-black/30"
       >
+        <div
+          aria-hidden="true"
+          style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)" }}
+        >
+          <input type="text" name="username" tabIndex={-1} autoComplete="username" />
+          <input type="password" name="password" tabIndex={-1} autoComplete="current-password" />
+        </div>
+
         <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-600/20">
           <LockIcon />
         </div>
@@ -138,7 +146,8 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
               <input
                 type={revealPassword ? "text" : "password"}
                 autoFocus
-                autoComplete="new-password"
+                autoComplete="off"
+                name="passku-master-secret"
                 data-lpignore="true"
                 data-1p-ignore
                 data-bwignore
@@ -166,7 +175,8 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
               <div className="relative">
                 <input
                   type={revealConfirm ? "text" : "password"}
-                  autoComplete="new-password"
+                  autoComplete="off"
+                  name="passku-master-secret-confirm"
                   data-lpignore="true"
                   data-1p-ignore
                   data-bwignore
