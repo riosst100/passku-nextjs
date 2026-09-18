@@ -18,6 +18,7 @@ export interface Credential {
 export interface CredentialPayload {
   username: string;
   password: string;
+  phone?: string;
   url?: string;
   notes?: string;
 }

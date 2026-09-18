@@ -51,12 +51,20 @@ async function pullFromServer(): Promise<void> {
   if (staleIds.length) await db.credentials.bulkDelete(staleIds);
 }
 
+const LAST_SYNCED_KEY = "passku_last_synced_at";
+
+export function getLastSyncedAt(): number | null {
+  const raw = localStorage.getItem(LAST_SYNCED_KEY);
+  return raw ? Number(raw) : null;
+}
+
 /** Pushes queued offline changes, then refreshes the local cache from the server. */
 export async function syncCredentials(): Promise<void> {
   if (!navigator.onLine) return;
   try {
     await flushPendingOps();
     await pullFromServer();
+    localStorage.setItem(LAST_SYNCED_KEY, String(Date.now()));
   } catch {
     // server unreachable mid-sync; local cache stays as the fallback
   }

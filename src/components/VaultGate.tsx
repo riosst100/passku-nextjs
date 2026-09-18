@@ -4,6 +4,15 @@ import { useEffect, useState } from "react";
 import { useVaultStore } from "@/store/useVaultStore";
 import { IdleLockWatcher } from "@/components/IdleLockWatcher";
 
+function LockIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </svg>
+  );
+}
+
 export function VaultGate({ children }: { children: React.ReactNode }) {
   const { status, error, init, setupMasterPassword, unlock } = useVaultStore();
   const [password, setPassword] = useState("");
@@ -16,8 +25,11 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
 
   if (status === "checking") {
     return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-neutral-500">
-        Memuat vault...
+      <div className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-neutral-50 via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900">
+        <div className="flex flex-col items-center gap-3 text-sm text-neutral-500">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600 dark:border-neutral-700 dark:border-t-neutral-300" />
+          Memuat vault...
+        </div>
       </div>
     );
   }
@@ -58,53 +70,65 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4 dark:bg-neutral-950">
+    <div className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-neutral-50 via-white to-neutral-100 px-4 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm rounded-xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
+        className="w-full max-w-sm rounded-2xl border border-neutral-200/80 bg-white/90 p-7 shadow-xl shadow-neutral-900/5 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-900/90 dark:shadow-black/30"
       >
-        <h1 className="mb-1 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+        <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900">
+          <LockIcon />
+        </div>
+
+        <h1 className="mb-1 text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
           Passku
         </h1>
-        <p className="mb-6 text-sm text-neutral-500">
+        <p className="mb-6 text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
           {isSetup
             ? "Buat master password untuk mengenkripsi vault kamu. Password ini tidak disimpan di mana pun — kalau lupa, data tidak bisa dipulihkan."
             : "Masukkan master password untuk membuka vault."}
         </p>
 
-        <label className="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
-          Master Password
-        </label>
-        <input
-          type="password"
-          autoFocus
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mb-3 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-800"
-          required
-        />
-
-        {isSetup && (
-          <>
-            <label className="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
-              Konfirmasi Password
+        <div className="space-y-3">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
+              Master Password
             </label>
             <input
               type="password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              className="mb-3 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-800"
+              autoFocus
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-neutral-300 dark:focus:ring-neutral-300/10"
               required
             />
-          </>
-        )}
+          </div>
 
-        {error && <p className="mb-3 text-xs text-red-500">{error}</p>}
+          {isSetup && (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                Konfirmasi Password
+              </label>
+              <input
+                type="password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-neutral-300 dark:focus:ring-neutral-300/10"
+                required
+              />
+            </div>
+          )}
+        </div>
+
+        {error && (
+          <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600 dark:bg-red-950/50 dark:text-red-400">
+            {error}
+          </p>
+        )}
 
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-lg bg-neutral-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+          className="mt-5 w-full rounded-xl bg-neutral-900 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
         >
           {submitting ? "Memproses..." : isSetup ? "Buat Vault" : "Buka Vault"}
         </button>
