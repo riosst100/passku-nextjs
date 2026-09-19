@@ -9,7 +9,17 @@ import {
   syncCredentials,
   getLastSyncedAt,
 } from "@/lib/credentials";
+import { DevicesPanel } from "@/components/DevicesPanel";
+import { detectNewSessions } from "@/lib/knownSessions";
 import type { CredentialPayload } from "@/types";
+
+interface SessionSummary {
+  id: string;
+  ip: string | null;
+  userAgent: string | null;
+  revoked: boolean;
+  current: boolean;
+}
 
 interface Entry {
   id: string;
@@ -95,6 +105,23 @@ function LockClosedIcon() {
   );
 }
 
+function DeviceIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="4" y="2" width="16" height="20" rx="2" />
+      <path d="M10 18h4" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
 function KeyholeIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -135,12 +162,15 @@ export function CredentialsView() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [showDevices, setShowDevices] = useState(false);
   const [editing, setEditing] = useState<Entry | null>(null);
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [online, setOnline] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [lastSyncedAt, setLastSyncedAtState] = useState<number | null>(null);
+  const [deviceCount, setDeviceCount] = useState<number | null>(null);
+  const [newSessionAlert, setNewSessionAlert] = useState<SessionSummary[] | null>(null);
   const revealTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -150,9 +180,32 @@ export function CredentialsView() {
     setLastSyncedAtState(getLastSyncedAt());
   };
 
+  const refreshDeviceCount = async (checkForNewSessions = false) => {
+    try {
+      const res = await fetch("/api/sessions");
+      if (!res.ok) return;
+      const rows = (await res.json()) as SessionSummary[];
+      setDeviceCount(rows.filter((r) => !r.revoked).length);
+
+      if (checkForNewSessions) {
+        const currentId = rows.find((r) => r.current)?.id ?? null;
+        const newIds = detectNewSessions(
+          rows.filter((r) => !r.revoked).map((r) => r.id),
+          currentId
+        );
+        if (newIds.length > 0) {
+          setNewSessionAlert(rows.filter((r) => newIds.includes(r.id)));
+        }
+      }
+    } catch {
+      // leave previous count as-is
+    }
+  };
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data load from IndexedDB/server
     void refresh();
+    void refreshDeviceCount(true);
     setOnline(navigator.onLine);
     const onOnline = () => {
       setOnline(true);
@@ -248,6 +301,37 @@ export function CredentialsView() {
   return (
     <div className="min-h-dvh bg-neutral-50 dark:bg-neutral-950">
       <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
+        {newSessionAlert && newSessionAlert.length > 0 && (
+          <div className="mb-4 animate-[fade-in-up_0.3s_ease-out] rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/40">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                  {newSessionAlert.length === 1
+                    ? "Sesi login baru terdeteksi"
+                    : `${newSessionAlert.length} sesi login baru terdeteksi`}
+                </p>
+                <ul className="mt-1.5 space-y-0.5 text-xs text-amber-700 dark:text-amber-400">
+                  {newSessionAlert.map((s) => (
+                    <li key={s.id} className="truncate">
+                      {s.ip ?? "IP tidak diketahui"} · {s.userAgent ?? "User agent tidak diketahui"}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-1.5 text-xs text-amber-700 dark:text-amber-400">
+                  Bukan kamu? Buka <span className="font-medium">Devices</span> untuk memblokir aksesnya.
+                </p>
+              </div>
+              <button
+                onClick={() => setNewSessionAlert(null)}
+                title="Tutup"
+                className="shrink-0 rounded-lg p-1.5 text-amber-600 transition hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/40"
+              >
+                <CloseIcon />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -273,6 +357,18 @@ export function CredentialsView() {
             </div>
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={() => setShowDevices(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-600 transition hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
+            >
+              <DeviceIcon />
+              Devices
+              {deviceCount !== null && (
+                <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-indigo-100 px-1 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300">
+                  {deviceCount}
+                </span>
+              )}
+            </button>
             <button
               onClick={handleWipeOfflineData}
               className="rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/40"
@@ -430,6 +526,15 @@ export function CredentialsView() {
           onSaved={async () => {
             closeForm();
             await refresh();
+          }}
+        />
+      )}
+
+      {showDevices && (
+        <DevicesPanel
+          onClose={() => {
+            setShowDevices(false);
+            void refreshDeviceCount();
           }}
         />
       )}

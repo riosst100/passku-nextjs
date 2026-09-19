@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Passku
 
-## Getting Started
+Password vault pribadi berbasis Next.js. Semua credential dienkripsi di browser (client-side, AES via Web Crypto) menggunakan key yang diturunkan dari master password — server hanya menyimpan data terenkripsi dan tidak pernah melihat master password maupun isi vault dalam bentuk plain text.
 
-First, run the development server:
+## Fitur
+
+- **Vault terenkripsi end-to-end**: enkripsi/dekripsi terjadi di browser; server hanya menyimpan ciphertext (lihat [src/lib/crypto.ts](src/lib/crypto.ts)).
+- **Offline-first**: credential di-cache di IndexedDB (Dexie) lewat [src/lib/db.ts](src/lib/db.ts), sehingga vault tetap bisa dibuka dan diedit saat offline, lalu disinkronkan otomatis saat online kembali ([src/lib/credentials.ts](src/lib/credentials.ts)).
+- **Auto-lock**: vault otomatis terkunci setelah idle beberapa saat ([src/components/IdleLockWatcher.tsx](src/components/IdleLockWatcher.tsx)).
+- **Manajemen device & sesi**: setiap login tercatat di server beserta IP dan User-Agent. Lihat daftar device yang sedang login dan blokir akses device tertentu dari panel Devices ([src/components/DevicesPanel.tsx](src/components/DevicesPanel.tsx)). Sesi login baru yang terdeteksi akan memunculkan alert di halaman utama.
+- **PWA-ready**: mendukung install sebagai aplikasi dan bekerja offline lewat service worker ([src/components/ServiceWorkerRegister.tsx](src/components/ServiceWorkerRegister.tsx)).
+
+## Arsitektur singkat
+
+- **Frontend**: Next.js App Router + React 19, state global via Zustand ([src/store/useVaultStore.ts](src/store/useVaultStore.ts)).
+- **Backend**: Next.js API routes ([src/app/api](src/app/api)), data disimpan di SQLite (`better-sqlite3`) — lihat [src/lib/server/db.ts](src/lib/server/db.ts).
+- **Autentikasi**: sesi berbasis JWT (cookie httpOnly) yang tervalidasi terhadap tabel `sessions` di database, sehingga sesi bisa dilacak dan di-revoke ([src/lib/server/session.ts](src/lib/server/session.ts)).
+- **Data yang disimpan server**: hanya ciphertext credential, hash verifier master password, dan metadata sesi (IP/User-Agent) — bukan master password maupun password asli.
+
+## Menjalankan secara lokal
+
+### Prasyarat
+
+- Node.js
+- Environment variable `PASSKU_SESSION_SECRET` (secret untuk menandatangani session JWT)
+
+Buat file `.env.local` di root project:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+PASSKU_SESSION_SECRET=<random-secret-string>
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Generate secret acak, misalnya:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Install & jalankan
 
-## Learn More
+```bash
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Buka [http://localhost:3000](http://localhost:3000) (atau port yang tertera di terminal) di browser. Saat pertama kali dibuka, kamu akan diminta membuat master password untuk setup vault.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Script lain
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run build   # build production
+npm run start   # jalankan hasil build
+npm run lint    # jalankan eslint
+```
 
-## Deploy on Vercel
+## Data & environment variable
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Variable | Wajib | Keterangan |
+| --- | --- | --- |
+| `PASSKU_SESSION_SECRET` | Ya | Secret untuk menandatangani session token (JWT). |
+| `PASSKU_DATA_DIR` | Tidak | Lokasi custom untuk file database SQLite. Default: folder `data/` di root project. |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Database SQLite (`passku.db`) berisi vault metadata, credential terenkripsi, dan catatan sesi login — folder `data/` sudah di-gitignore.
+
+## Deployment
+
+Repo ini memakai GitHub Actions ([.github/workflows/deploy.yml](.github/workflows/deploy.yml)) untuk deploy otomatis ke server via SSH setiap kali ada push ke branch `master`. Workflow membutuhkan GitHub Secrets berikut:
+
+- `DEPLOY_HOST`
+- `DEPLOY_USER`
+- `DEPLOY_SSH_KEY`
+
+Server tujuan menjalankan aplikasi dengan PM2 (`pm2 restart passku`).

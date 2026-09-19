@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/server/db";
-import { createSessionToken, SESSION_COOKIE } from "@/lib/server/session";
+import { createSessionToken, getSessionIdFromToken, revokeSession, SESSION_COOKIE } from "@/lib/server/session";
 import { sha256Hex, safeEqual } from "@/lib/server/hash";
+
+function clientIp(req: NextRequest): string | null {
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return req.headers.get("x-real-ip");
+}
 
 interface VaultMetaRow {
   id: string;
@@ -32,7 +38,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
-  const token = await createSessionToken();
+  const token = await createSessionToken(clientIp(req), req.headers.get("user-agent"));
   const res = NextResponse.json({ ok: true });
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
@@ -44,7 +50,13 @@ export async function POST(req: NextRequest) {
   return res;
 }
 
-export async function DELETE() {
+export async function DELETE(req: NextRequest) {
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  if (token) {
+    const sessionId = await getSessionIdFromToken(token);
+    if (sessionId) revokeSession(sessionId);
+  }
+
   const res = NextResponse.json({ ok: true });
   res.cookies.delete(SESSION_COOKIE);
   return res;
